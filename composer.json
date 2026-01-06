@@ -2,7 +2,9 @@
   "name": "school/mini-mvc",
   "description": "Mini projet MVC pédagogique (léger)",
   "type": "project",
-  "require": {},
+  "require": {
+    "ext-pdo": "*"
+  },
   "autoload": {
     "psr-4": {
       "Mini\\": "app/"

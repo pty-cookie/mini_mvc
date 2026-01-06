@@ -7,6 +7,9 @@ namespace Mini\Controllers;
 // Importe la classe de base Controller du noyau
 use Mini\Core\Controller;
 use Mini\Models\User;
+use Mini\Models\Produit;
+use Mini\Models\Categorie;
+use Mini\Models\Commande;
 
 // Déclare la classe finale HomeController qui hérite de Controller
 final class HomeController extends Controller
@@ -14,13 +17,49 @@ final class HomeController extends Controller
     // Déclare la méthode d'action par défaut qui ne retourne rien
     public function index(): void
     {
-        // Appelle le moteur de rendu avec la vue et ses paramètres
-        $this->render('home/index', params: [
-            // Définit le titre transmis à la vue
-            'title' => 'Mini MVC',
-            'prenom' => 'Toto',
-            'prenom2' => 'Tata',
-            'test' => '123'
+        // Démarrer la session
+        session_start();
+        
+        // Vérifier si l'utilisateur est connecté
+        $isLoggedIn = isset($_SESSION['user_id']);
+        $currentUser = null;
+        
+        if ($isLoggedIn) {
+            // Récupérer les informations de l'utilisateur connecté
+            $userModel = new User();
+            $users = $userModel->getAll();
+            $currentUser = array_filter($users, fn($u) => $u['id'] == $_SESSION['user_id']);
+            $currentUser = array_values($currentUser)[0] ?? null;
+        } else {
+            $currentUser = null;
+        }
+        
+        // Récupérer les données depuis les modèles
+        $userModel = new User();
+        $produitModel = new Produit();
+        $categorieModel = new Categorie();
+        $commandeModel = new Commande();
+        
+        $users = $userModel->getAll();
+        $produits = $produitModel->getAll();
+        $categories = $categorieModel->getAll();
+        
+        // Récupérer les commandes de l'utilisateur connecté ou toutes les commandes
+        $commandes = [];
+        if ($isLoggedIn) {
+            $commandes = $commandeModel->getByUserId($_SESSION['user_id']);
+        } else {
+            $commandes = $commandeModel->getAll();
+        }
+        
+        // Afficher le tableau de bord
+        $this->render('home/dashboard', params: [
+            'users' => $users,
+            'produits' => $produits,
+            'categories' => $categories,
+            'commandes' => $commandes,
+            'isLoggedIn' => $isLoggedIn,
+            'currentUser' => $currentUser
         ]);
     }
 
@@ -99,5 +138,13 @@ final class HomeController extends Controller
             http_response_code(500);
             echo json_encode(['error' => 'Erreur lors de la création de l\'utilisateur.'], JSON_PRETTY_PRINT);
         }
+    }
+
+    public function logout(): void
+    {
+        session_start();
+        session_destroy();
+        header('Location: /');
+        exit;
     }
 }
